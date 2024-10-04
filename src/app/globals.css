@@ -1,12 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-<<<<<<< HEAD
-=======
-
->>>>>>> f68fbe1bb36364247ef9c95f033274bf6d409467
-
-
 
 @layer utilities {
   .text-balance {
@@ -78,7 +72,3 @@
     @apply bg-background text-foreground;
   }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> f68fbe1bb36364247ef9c95f033274bf6d409467
