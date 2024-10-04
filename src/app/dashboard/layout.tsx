@@ -1,9 +1,13 @@
-import React from 'react'
+import React from "react";
+import SideBar from "@/components/sideBar";
 
 const layout = () => {
   return (
-    <div>layout</div>
-  )
-}
+    <>
+      layout
+      <SideBar />
+    </>
+  );
+};
 
-export default layout
+export default layout;
