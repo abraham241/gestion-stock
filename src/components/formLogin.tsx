@@ -69,7 +69,6 @@ export function LoginForm() {
                             Se connecter
                         </span>
                     )}
-                    
                 </Button>
             </CardFooter>
         </Card>
