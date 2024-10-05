@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 // import profil from "../public/images/profil.jpg";
 
 type navBarProps = {
-  className?: string
-}
+  className?: string;
+};
 
 const NavBar: React.FC<navBarProps> = ({ className }) => {
   return (
-    <div className={cn(className, 'flex items-center justify-between')}>
+    <div className={cn(className, "flex items-center justify-between")}>
       <div className="">
         <a className="btn-ghost text-3xl font-bold ">Dashboard</a>
       </div>
@@ -34,16 +34,11 @@ const NavBar: React.FC<navBarProps> = ({ className }) => {
             <FaUserCircle size={40} />
           </button>
           <div className="flex flex-col gap-y-0 justify-center">
-            <span className="font-bold text-[16px]">
-              Audrey Amanda
-            </span>
-            <span className="text-[14px]">
-              Vendeur
-            </span>
+            <span className="font-bold text-[16px]">Audrey Amanda</span>
+            <span className="text-[14px]">Vendeur</span>
           </div>
         </div>
       </div>
-
     </div>
   );
 };
