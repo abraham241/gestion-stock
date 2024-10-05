@@ -13,6 +13,8 @@ const StepForm = () => {
     seuilAlerte: "",
     prix: "",
     totalStock: "",
+    taille: "",
+    couleur: "",
     imageProduit: null,
   });
 
@@ -120,6 +122,41 @@ const StepForm = () => {
                   onChange={handleChange}
                   className="block w-full p-3 border border-gray-300 rounded-lg"
                 ></textarea>
+              </div>
+              <div className="mb-5">
+                <label className="block mb-2 font-medium">
+                  Taille du produit
+                </label>
+                <select
+                  name="taille"
+                  value={formData.taille}
+                  onChange={handleChange}
+                  className="block w-full p-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Choisir la taille</option>
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                </select>
+              </div>
+              <div className="mb-5">
+                <label className="block mb-2 font-medium">
+                  Couleur du produit
+                </label>
+                <select
+                  name="couleur"
+                  value={formData.couleur}
+                  onChange={handleChange}
+                  className="block w-full p-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Choisir la couleur</option>
+                  <option value="Noir">Noir</option>
+                  <option value="Blanc">Blanc</option>
+                  <option value="Rouge">Rouge</option>
+                  <option value="Bleu">Bleu</option>
+                  <option value="Vert">Vert</option>
+                </select>
               </div>
               <div className="flex justify-between">
                 <button
