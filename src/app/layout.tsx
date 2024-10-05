@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={cn(poppins.variable, 'font-poppins')}
+        className={cn(poppins.variable, 'font-poppins bg-[#ecedf8]')}
       >
         {children}
       </body>
