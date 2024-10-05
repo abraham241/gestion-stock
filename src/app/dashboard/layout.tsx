@@ -35,7 +35,7 @@ const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
       </div>
       <div className='h-full flex-1 flex flex-col gap-y-5'>
         <NavBar className='' />
-        <ScrollArea className='h-[98%] flex-1 py-2'>
+        <ScrollArea className='h-[100vh] flex-1 py-2 px-4'>
           {children}
         </ScrollArea>
       </div>
