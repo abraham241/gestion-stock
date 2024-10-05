@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -75,4 +72,3 @@
     @apply bg-background text-foreground;
   }
 }
-

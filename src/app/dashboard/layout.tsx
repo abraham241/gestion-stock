@@ -1,18 +1,15 @@
-import React from 'react';
+import React from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { Auth } from "@/Firebase/firebase.config";
+
 import NavBar from '@/components/navBar';
 import SideBar from '@/components/sideBar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 
-
-
 const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
-
   const verifedSingIn = () => {
-
     const auth = Auth;
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -25,12 +22,11 @@ const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
         // ...
       }
     });
-
-  }
+  };
 
   return (
-    <main className='h-[100vh] w-full p-8 flex gap-x-8'>
-      <div className='h-full w-[180px] flex'>
+    <main className="h-[100vh] w-full p-8 flex gap-x-8">
+      <div className="h-full w-[180px] flex">
         <SideBar />
       </div>
       <div className='h-full flex-1 flex flex-col gap-y-5'>
@@ -38,9 +34,10 @@ const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
         <ScrollArea className='h-[98%] flex-1 py-2'>
           {children}
         </ScrollArea>
+
       </div>
     </main>
-  )
-}
+  );
+};
 
-export default layout
+export default layout;
