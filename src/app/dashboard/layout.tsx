@@ -21,14 +21,13 @@ const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
   };
 
   return (
-    <main className="h-[100vh] w-full">
-      <div className="h-[10%] w-full bg-emerald-400">
-        <NavBar className="h-full" />
+    <main className="h-[100vh] w-full p-8 flex gap-x-8">
+      <div className="h-full w-[180px] flex">
+        <SideBar />
       </div>
-      <div className="h-[90%] w-full flex">
-        <div className="w-36 h-full">
-          <SideBar />
-        </div>
+      <div className="h-full flex-1">
+        <NavBar className="" />
+        <div className="flex-1">{children}</div>
         <div className="flex-1">{children}</div>
       </div>
     </main>
