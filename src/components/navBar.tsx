@@ -4,13 +4,15 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 // import profil from "../public/images/profil.jpg";
 
-type navBarProps ={
-  className?: string
-}
+type navBarProps = {
+  className?: string;
+};
 
-const NavBar: React.FC<navBarProps> = ({className}) => {
+const NavBar: React.FC<navBarProps> = ({ className }) => {
   return (
-    <div className={cn(className, 'bg-base-100 flex justify-around items-center')}>
+    <div
+      className={cn(className, "bg-[#001B48] flex justify-around items-center")}
+    >
       <div className="">
         <a className="btn-ghost text-3xl font-bold ">Dashboard</a>
       </div>
@@ -29,7 +31,6 @@ const NavBar: React.FC<navBarProps> = ({className}) => {
           {/* <Image src={profil} alt="" height={100} width={100} /> */}
         </div>
       </div>
-
     </div>
   );
 };
