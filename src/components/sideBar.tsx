@@ -1,6 +1,6 @@
-'use client'
-import { cn } from '@/lib/utils';
-import React, { useState } from 'react';
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useState } from "react";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { TbLayoutDashboardFilled } from "react-icons/tb";
 
@@ -15,11 +15,13 @@ import { AiOutlineDatabase } from "react-icons/ai";
 
 import { PiSignOutBold } from "react-icons/pi";
 import { PiSignOut } from "react-icons/pi";
+
 import { useRouter, usePathname } from 'next/navigation';
 
+
 type sideBarProps = {
-  className?: string
-}
+  className?: string;
+};
 
 const SideBar: React.FC<sideBarProps> = ({ className }) => {
   const router = useRouter();
@@ -27,6 +29,7 @@ const SideBar: React.FC<sideBarProps> = ({ className }) => {
 
   const handleLink = (link: string) => {
     router.push(link);
+
   }
 
   const verifedPath = (link: string) => {
@@ -38,12 +41,18 @@ const SideBar: React.FC<sideBarProps> = ({ className }) => {
   }
 
   return (
-    <div className={cn(className, 'rounded-3xl bg-white w-full shadow-xl h-full flex flex-col justify-between items-center py-5 px-2')}>
-      <div className='w-full flex flex-col items-center'>
+    <div
+      className={cn(
+        className,
+        "rounded-3xl bg-white w-full shadow-xl h-full flex flex-col justify-between items-center py-5 px-2"
+      )}
+    >
+      <div className="w-full flex flex-col items-center">
         <div></div>
 
-        <ul className='flex flex-col gap-y-5 w-full'>
+        <ul className="flex flex-col gap-y-5 w-full">
           <li>
+
             <button onClick={() => handleLink('/dashboard')} className={`flex items-center gap-x-1 mx-auto w-full px-1 py-2 ${verifedPath('/dashboard') && 'bg-[#4956f4] text-white rounded-md'}`}>
               {verifedPath('/dashboard') ? (
                 <TbLayoutDashboardFilled size={30} />
@@ -92,19 +101,17 @@ const SideBar: React.FC<sideBarProps> = ({ className }) => {
               <span>
                 Stocks
               </span>
+
             </button>
           </li>
         </ul>
-
       </div>
-      <button className='flex items-center gap-x-1 focus:bg-[#4956f4] focus:text-white focus:rounded-md mx-auto w-full px-1 py-2'>
+      <button className="flex items-center gap-x-1 focus:bg-[#4956f4] focus:text-white focus:rounded-md mx-auto w-full px-1 py-2">
         <PiSignOut />
-        <span>
-          se déconnecter
-        </span>
+        <span>se déconnecter</span>
       </button>
     </div>
-  )
-}
+  );
+};
 
-export default SideBar
+export default SideBar;
