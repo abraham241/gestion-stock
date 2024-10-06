@@ -111,6 +111,7 @@ const page = () => {
   };
   
 
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-lg w-full">
@@ -180,6 +181,7 @@ const page = () => {
                   </SelectContent>
                 </Select>
 
+
               </div>
               <div className="mb-5">
                 <label className="block mb-2 font-medium">
@@ -237,6 +239,7 @@ const page = () => {
                   <option value="Vert">Vert</option>
                 </select>
               </div>
+
               <div className="flex justify-between">
                 <button
                   type="button"
@@ -344,10 +347,10 @@ const page = () => {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
   );
 };
-
 export default page;
