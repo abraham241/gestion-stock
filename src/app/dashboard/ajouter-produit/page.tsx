@@ -11,6 +11,18 @@ import {
 } from "@/components/ui/select"
 import { BeatLoader } from "react-spinners";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { FaCircleCheck } from "react-icons/fa6";
+import { IoMdCloseCircle } from "react-icons/io";
+
 
 type dataProduit = {
   nomProduit: string,
@@ -24,6 +36,7 @@ type dataProduit = {
   taille: string,
   couleur: string,
   imageProduit: string,
+  date_creation: string
 }
 
 const page = () => {
@@ -31,7 +44,8 @@ const page = () => {
   const [formData, setFormData] = useState<dataProduit | any>({});
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [addProductStatus, setAddProductStatus] = useState(false);
+  const [messageStatus, setMessageStatus] = useState("");
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
@@ -61,7 +75,7 @@ const page = () => {
   };
 
   const handleFileChange = (e: any) => {
-    setFormData({ ...formData, imageProduit: e.target.files[0]});
+    setFormData({ ...formData, imageProduit: e.target.files[0] });
   };
 
   const isStepOneValid = formData.nomProduit && formData.codeBarProduit;
@@ -87,32 +101,53 @@ const page = () => {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setAddProductStatus(true)
     try {
       let imageUrl = "";
-  
+
       if (formData.imageProduit) {
         imageUrl = await handleImageUpload(formData.imageProduit);
       }
-  
+
       const newFormData = {
         ...formData,
-        imageProduit: imageUrl
+        imageProduit: imageUrl, date_creation: new Date()
       };
-  
+
+
       console.log("Submitting form data:", newFormData);  // Ajoutez une console log ici
       await addDoc(collection(db, "stock"), newFormData);
       console.log("Document successfully written!");
+      setMessageStatus('success')
     } catch (error: any) {
       console.error("Error adding document: ", error);
-      alert(`Error adding document: ${error.message}`);
+      console.log(`Error adding document: ${error.message}`);
+      setMessageStatus("failure")
     } finally {
       setLoading(false);
+      setAddProductStatus(true);
+      setStep(1)
+      setFormData({
+        nomProduit: "",
+        codeBarProduit: "",
+        categorieProduit: "",
+        descriptionProduit: "",
+        quantite: "",
+        seuilAlerte: "",
+        prix: "",
+        totalStock: "",
+        taille: "",
+        couleur: "",
+        imageProduit: "",
+        date_creation: "",
+      })
     }
   };
-  
+
+
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="flex items-center justify-center">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-lg w-full">
         <div className="text-center text-3xl font-bold mb-6">
           <h2>Enrégistrez vos nouveaux articles</h2>
@@ -180,6 +215,7 @@ const page = () => {
                   </SelectContent>
                 </Select>
 
+
               </div>
               <div className="mb-5">
                 <label className="block mb-2 font-medium">
@@ -237,6 +273,7 @@ const page = () => {
                   <option value="Vert">Vert</option>
                 </select>
               </div>
+
               <div className="flex justify-between">
                 <button
                   type="button"
@@ -341,13 +378,32 @@ const page = () => {
                     </span>
                   )}
                 </button>
+                <Dialog open={addProductStatus} onOpenChange={()=> setAddProductStatus(false)}>
+                  <DialogContent className="sm:max-w-[425px]">
+                    {messageStatus === 'failure' ? (
+                      <div className="flex flex-col gap-y-3 items-center">
+                        <IoMdCloseCircle color="red" size={60} />
+                        <span className="text-lg text-red-500">
+                          Une erreur s'est produite, veuiller reessayer!
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-y-3 items-center">
+                        <FaCircleCheck color="green" size={60} />
+                        <span className="text-lg text-green-500">
+                          Ajout du produit s'est effectuer avec success
+                        </span>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          )
+          }
+        </div >
+      </div >
+    </div >
   );
 };
-
 export default page;
