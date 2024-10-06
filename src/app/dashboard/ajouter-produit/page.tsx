@@ -1,22 +1,36 @@
 "use client";
-
+import { addDoc, collection, doc, getDocs, setDoc } from "firebase/firestore";
 import React, { useState, useEffect } from "react";
+import { db, storage } from "@/Firebase/firebase.config";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { BeatLoader } from "react-spinners";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-const StepForm = () => {
+type dataProduit = {
+  nomProduit: string,
+  codeBarProduit: string,
+  categorieProduit: string,
+  descriptionProduit: string,
+  quantite: string,
+  seuilAlerte: string,
+  prix: string,
+  totalStock: string,
+  taille: string,
+  couleur: string,
+  imageProduit: string,
+}
+
+const page = () => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    nomProduit: "",
-    codeBarProduit: "",
-    categorieProduit: "",
-    descriptionProduit: "",
-    quantite: "",
-    seuilAlerte: "",
-    prix: "",
-    totalStock: "",
-    taille: "",
-    couleur: "",
-    imageProduit: null,
-  });
+  const [formData, setFormData] = useState<dataProduit | any>({});
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
@@ -26,8 +40,20 @@ const StepForm = () => {
     const quantite = parseFloat(formData.quantite) || 0;
     const prix = parseFloat(formData.prix) || 0;
     const total = quantite * prix;
-    setFormData((prev) => ({ ...prev, totalStock: total.toFixed(2) }));
+    setFormData((prev: dataProduit) => ({ ...prev, totalStock: total.toFixed(2) }));
   }, [formData.quantite, formData.prix]);
+
+  useEffect(() => {
+    const getCategories = async () => {
+      const categoriesCollection = collection(db, "categorie");  // Récupérer la collection 'categorie'
+      const categoriesSnapshot = await getDocs(categoriesCollection);  // Récupérer tous les documents de la collection
+      const categoriesList = categoriesSnapshot.docs.map((doc) => doc.data());  // Transformer les documents en données
+      setCategories(categoriesList[0].Catégories);  // Mettre à jour l'état des catégories avec les données
+    };
+
+    getCategories();
+  }, [])
+
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -35,14 +61,55 @@ const StepForm = () => {
   };
 
   const handleFileChange = (e: any) => {
-    setFormData({ ...formData, imageProduit: e.target.files[0] });
+    setFormData({ ...formData, imageProduit: e.target.files[0]});
   };
 
   const isStepOneValid = formData.nomProduit && formData.codeBarProduit;
-  const isStepTwoValid =
-    formData.categorieProduit && formData.descriptionProduit;
-  const isStepThreeValid =
-    formData.quantite && formData.seuilAlerte && formData.prix;
+  const isStepTwoValid = formData.categorieProduit && formData.descriptionProduit;
+  const isStepThreeValid = formData.quantite && formData.seuilAlerte && formData.prix;
+
+
+  const handleImageUpload = async (file: File) => {
+    const storageRef = ref(storage, `images/${file.name}`);
+
+    try {
+      // Upload de l'image dans Firebase Storage
+      const snapshot = await uploadBytes(storageRef, file);
+
+      // Récupération de l'URL de téléchargement après l'upload
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL; // Cette URL sera stockée dans Firestore
+    } catch (error) {
+      alert(`Error uploading image: ${error}`);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      let imageUrl = "";
+  
+      if (formData.imageProduit) {
+        imageUrl = await handleImageUpload(formData.imageProduit);
+      }
+  
+      const newFormData = {
+        ...formData,
+        imageProduit: imageUrl
+      };
+  
+      console.log("Submitting form data:", newFormData);  // Ajoutez une console log ici
+      await addDoc(collection(db, "stock"), newFormData);
+      console.log("Document successfully written!");
+    } catch (error: any) {
+      console.error("Error adding document: ", error);
+      alert(`Error adding document: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -50,7 +117,7 @@ const StepForm = () => {
         <div className="text-center text-3xl font-bold mb-6">
           <h2>Enrégistrez vos nouveaux articles</h2>
         </div>
-        <form className="space-y-8">
+        <div className="space-y-8">
           {step === 1 && (
             <div>
               <h3 className="text-2xl font-semibold mb-4 text-blue-600">
@@ -100,17 +167,19 @@ const StepForm = () => {
                 <label className="block mb-2 font-medium">
                   Catégorie du produit
                 </label>
-                <select
-                  name="categorieProduit"
-                  value={formData.categorieProduit}
-                  onChange={handleChange}
-                  className="block w-full p-3 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Choisir</option>
-                  <option value="France">France</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Germany">Germany</option>
-                </select>
+                <Select name="categorieProduit" value={formData.categorieProduit} onValueChange={(value) => setFormData({ ...formData, categorieProduit: value })}>
+                  <SelectTrigger className="w-full h-10 border border-gray-300">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.length !== 0 && categories.map((categorie) => (
+                      <SelectItem key={categorie} value={categorie}>
+                        {categorie}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
               </div>
               <div className="mb-5">
                 <label className="block mb-2 font-medium">
@@ -127,18 +196,28 @@ const StepForm = () => {
                 <label className="block mb-2 font-medium">
                   Taille du produit
                 </label>
-                <select
-                  name="taille"
-                  value={formData.taille}
-                  onChange={handleChange}
-                  className="block w-full p-3 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Choisir la taille</option>
-                  <option value="S">S</option>
-                  <option value="M">M</option>
-                  <option value="L">L</option>
-                  <option value="XL">XL</option>
-                </select>
+                <Select name="taille" value={formData.taille} onValueChange={(value) => setFormData({ ...formData, taille: value })}>
+                  <SelectTrigger className="w-full h-10 border border-gray-300">
+                    <SelectValue placeholder="Choisir la taille" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="S">
+                      S
+                    </SelectItem>
+                    <SelectItem value="L">
+                      L
+                    </SelectItem>
+                    <SelectItem value="M">
+                      M
+                    </SelectItem>
+                    <SelectItem value="XL">
+                      XL
+                    </SelectItem>
+                    <SelectItem value="2XL">
+                      2XL
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="mb-5">
                 <label className="block mb-2 font-medium">
@@ -252,16 +331,23 @@ const StepForm = () => {
                   type="submit"
                   className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600"
                   disabled={!isStepThreeValid}
+                  onClick={handleSubmit}
                 >
-                  Enrégistrer
+                  {loading ? (
+                    <BeatLoader color="white" size={10} />
+                  ) : (
+                    <span>
+                      Enrégistrer
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
           )}
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default StepForm;
+export default page;
