@@ -142,7 +142,7 @@ const Ventes = () => {
                     {/* Sélection de la couleur */}
                     <div className="mt-2">
                       <span>Couleurs disponibles :</span>
-                      <div className="flex space-x-2 mt-2">
+                      <div className="flex space-x-2 mt-2 ">
                         {colors.map((color) => (
                           <label key={color} className="flex items-center">
                             <input
