@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { TrendingUp } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import { TrendingUp } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
   Card,
@@ -10,24 +10,24 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 
-export const description = "A multiple bar chart"
+export const description = "A multiple bar chart";
 
 const chartData = [
   { month: "January", desktop: 186, mobile: 80, airpod: 25 },
-  { month: "February", desktop: 305, mobile: 200,  airpod: 268 },
-  { month: "March", desktop: 237, mobile: 120 , airpod: 10 },
+  { month: "February", desktop: 305, mobile: 200, airpod: 268 },
+  { month: "March", desktop: 237, mobile: 120, airpod: 10 },
   { month: "April", desktop: 73, mobile: 190, airpod: 300 },
   { month: "May", desktop: 209, mobile: 130, airpod: 95 },
   { month: "June", desktop: 214, mobile: 140, airpod: 600 },
-]
+];
 
 const chartConfig = {
   desktop: {
@@ -41,8 +41,8 @@ const chartConfig = {
   airpod: {
     label: "AirPod",
     color: "hsl(var(--chart-3))",
-  }
-} satisfies ChartConfig
+  },
+} satisfies ChartConfig;
 
 export function Chart() {
   return (
@@ -81,5 +81,5 @@ export function Chart() {
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
