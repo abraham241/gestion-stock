@@ -383,14 +383,14 @@ const page = () => {
                     {messageStatus === 'failure' ? (
                       <div className="flex flex-col gap-y-3 items-center">
                         <IoMdCloseCircle color="red" size={60} />
-                        <span className="text-lg text-red-500">
+                        <span className="text-[18px]">
                           Une erreur s'est produite, veuiller reessayer!
                         </span>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-y-3 items-center">
                         <FaCircleCheck color="green" size={60} />
-                        <span className="text-lg text-green-500">
+                        <span className="text-[18px]">
                           Ajout du produit s'est effectuer avec success
                         </span>
                       </div>
