@@ -104,7 +104,7 @@ const Ventes = () => {
 
         {/* Liste des résultats filtrés */}
         {searchTerm && (
-          <ul className="bg-white border border-gray-300 rounded-lg max-h-72 overflow-y-auto">
+          <ul className="bg-white border border-gray-300 rounded-lg">
             {filteredItems.length > 0 ? (
               filteredItems.map((item, index) => (
                 <li key={index} className="p-4 border-b">
