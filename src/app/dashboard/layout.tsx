@@ -1,10 +1,11 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { Auth } from "@/Firebase/firebase.config";
 
 import NavBar from '@/components/navBar';
 import SideBar from '@/components/sideBar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Loading from "./loading";
 
 
 
@@ -25,18 +26,20 @@ const layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
   };
 
   return (
-    <main className="h-[100vh] w-full p-8 flex gap-x-8">
-      <div className="h-full w-[180px] flex">
-        <SideBar />
-      </div>
-      <div className='h-full flex-1 flex flex-col gap-y-5'>
-        <NavBar className='' />
-        <ScrollArea className='h-[100vh] flex-1 py-2 px-4'>
-          {children}
-        </ScrollArea>
+    <Suspense fallback={<Loading />}>
+      <main className="h-[100vh] w-full p-8 flex gap-x-8">
+        <div className="h-full w-[180px] flex">
+          <SideBar />
+        </div>
+        <div className='h-full flex-1 flex flex-col gap-y-5'>
+          <NavBar className='' />
+          <ScrollArea className='h-[100vh] flex-1 py-2 px-4'>
+            {children}
+          </ScrollArea>
 
-      </div>
-    </main>
+        </div>
+      </main>
+    </Suspense>
   );
 };
 
