@@ -108,7 +108,9 @@ const page = () => {
           </h1>
         </Section>
         <Section className='h-[40%] w-full bg-white flex-none'>
-          <h1></h1>
+          <h1>
+            
+          </h1>
         </Section>
       </div>
     </main>
