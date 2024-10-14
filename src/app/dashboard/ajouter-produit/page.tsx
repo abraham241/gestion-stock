@@ -268,9 +268,6 @@ const Page = () => {
                   className="h-10 border outline-none rounded-md p-2 w-[80px]"
                 />
               </div>
-              <button onClick={handleAddOption} className="self-end py-1 px-2 rounded-md border">
-                <FaPlusCircle size={30} />
-              </button>
               <div className="flex flex-col gap-y-3">
                 <label>Image du Produit</label>
                 <input
@@ -283,6 +280,9 @@ const Page = () => {
                   className="h-10 border outline-none rounded-md p-2 flex-1"
                 />
               </div>
+              <button onClick={handleAddOption} className="self-end py-1 px-2 rounded-md border">
+                <FaPlusCircle size={30} />
+              </button>
             </div>
           )}
         </div>

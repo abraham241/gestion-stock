@@ -102,8 +102,10 @@ const page = () => {
         </div>
       </div>
       <div className='w-[28%] h-full flex flex-col justify-between'>
-        <Section className='h-[58%] w-full bg-white flex-none'>
-          <h1></h1>
+        <Section className='h-[58%] w-full bg-white flex-none p-2'>
+          <h1 className='text-xl font-bold'>
+            Produit recement vendu
+          </h1>
         </Section>
         <Section className='h-[40%] w-full bg-white flex-none'>
           <h1></h1>

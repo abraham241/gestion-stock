@@ -37,23 +37,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/Firebase/firebase.config';
 
-export type Produit = {
-  categorieProduit: string;
-  codeBarProduit: string;
-  couleur: string;
-  date_creation: {
-    seconds: number;
-    nanoseconds: number;
-  };
-  descriptionProduit: string;
-  imageProduit: string;
-  nomProduit: string;
-  prix: string;
-  quantite: string;
-  seuilAlerte: string;
-  taille: string;
-  totalStock: string;
-  id?:string
+type Stock = {
+  id: string; // Assurez-vous que chaque item récupéré ait un champ ID
+  name: string;
+  dateAdded: Date
+  category: string;
+  unitPrice: number;
+  totalQuantity: number;
+  totalPrice: number;
+  options: {
+    size: string;
+    color: string;
+    quantity: number;
+    seuil: number;
+    imageUrl: string;
+  }[];
 };
 
 const Page = () => {
@@ -61,8 +59,8 @@ const Page = () => {
   const [categories, setCategories] = useState([]);
   const [categorieSelected, setCategorieSelected] = useState('');
   const [searchTerm, setSearchTerm] = useState(''); // État pour gérer l'input de recherche
-  const [dataStock, setDataStock] = useState<Produit[]>([]);
-  const [dataFliter, setDataFilter] = useState<Produit[]>([]);
+  const [dataStock, setDataStock] = useState<Stock[]>([]);
+  const [dataFliter, setDataFilter] = useState<Stock[]>([]);
 
   function afficherDateCreation(date_creation: { seconds: number; nanoseconds: number }): string {
     const date = new Date(date_creation.seconds * 1000); // Convertir les secondes en millisecondes
@@ -76,9 +74,12 @@ const Page = () => {
       const categoriesList = categoriesSnapshot.docs.map((doc) => doc.data());  // Transformer les documents en données
       setCategories(categoriesList[0].Catégories);  // Mettre à jour l'état des catégories avec les données
 
-      const stock = collection(db, 'stock');
-      const stockSnapshot = await getDocs(stock);
-      const stocksList = stockSnapshot.docs.map((doc) => doc.data()) as Produit[];
+      const stockCollection = collection(db, "stock");
+      const stockSnapshot = await getDocs(stockCollection);
+      const stocksList = stockSnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id, // Associez l'ID du document ici
+      })) as Stock[];
       setDataStock(stocksList);
       setDataFilter(stocksList); // Initialement, montrer tous les produits
     };
@@ -89,8 +90,8 @@ const Page = () => {
   // Filtrage des produits en fonction de la catégorie et du terme de recherche
   useEffect(() => {
     const filteredData = dataStock.filter(stock => {
-      const isCategoryMatch = categorieSelected ? stock.categorieProduit.toLowerCase() === categorieSelected.toLowerCase() : true;
-      const isSearchMatch = searchTerm ? stock.nomProduit.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+      const isCategoryMatch = categorieSelected ? stock.category.toLowerCase() === categorieSelected.toLowerCase() : true;
+      const isSearchMatch = searchTerm ? stock.name.toLowerCase().includes(searchTerm.toLowerCase()) : true;
       return isCategoryMatch && isSearchMatch;
     });
     setDataFilter(filteredData);
@@ -185,17 +186,17 @@ const Page = () => {
                             alt="Product image"
                             className="aspect-square rounded-md object-cover"
                             height="64"
-                            src={stoc.imageProduit}
+                            src={stoc.}
                             width="64"
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{stoc.nomProduit}</TableCell>
+                        <TableCell className="font-medium">{stoc.name}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{stoc.seuilAlerte}</Badge>
+                          <Badge variant="outline">{stoc}</Badge>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{stoc.prix}</TableCell>
-                        <TableCell className="hidden md:table-cell">{stoc.quantite}</TableCell>
-                        <TableCell className="hidden md:table-cell">{afficherDateCreation(stoc.date_creation)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{stoc.totalPrice}</TableCell>
+                        <TableCell className="hidden md:table-cell">{stoc.totalQuantity}</TableCell>
+                        <TableCell className="hidden md:table-cell">{afficherDateCreation(stoc.)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
