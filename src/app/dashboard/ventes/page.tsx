@@ -1,232 +1,374 @@
 "use client"; // Indiquer que c'est un composant Client
 
-import React, { useState } from "react";
+import { db } from "@/Firebase/firebase.config";
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { LuSearch } from "react-icons/lu";
+import { BiSolidCartAdd } from "react-icons/bi";
+import { IoMdCloseCircle } from "react-icons/io";
+import { SlBasket } from "react-icons/sl";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+
+
+type Stock = {
+  id: string; // Assurez-vous que chaque item récupéré ait un champ ID
+  name: string;
+  category: string;
+  unitPrice: number;
+  totalQuantity: number;
+  totalPrice: number;
+  options: {
+    size: string;
+    color: string;
+    quantity: number;
+    seuil: number;
+    imageUrl: string;
+  }[];
+};
+
+type SelectedItem = {
+  id: string;
+  name: string;
+  size: string;
+  color: string;
+  quantity: number;
+  Price: number;
+};
 
 const Ventes = () => {
-  const [searchTerm, setSearchTerm] = useState<string>(""); // Termes de recherche
-  const [selectedItems, setSelectedItems] = useState<
-    { item: string; quantity: number; size: string; color: string }[] // Inclure la couleur ici
-  >([]); // Articles sélectionnés avec quantité, taille et couleur
-
-  // Liste des articles de vêtements
-  const items = [
-    "T-shirt",
-    "Pantalon",
-    "Veste",
-    "Robe",
-    "Chemise",
-    "Short",
-    "Sweatshirt",
-    "Jupe",
-    "Blouson",
-    "Manteau",
-  ];
-
-  // Tailles disponibles
-  const sizes = ["S", "M", "L", "XL"];
-
-  // Couleurs disponibles
-  const colors = ["Rouge", "Bleu", "Vert", "Jaune", "Noir", "Blanc"]; // Nouvelle liste de couleurs
+  const [dataStock, setDataStock] = useState<Stock[]>([]);
+  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [searchTerm, setSearchTerm] = useState(""); // Termes de recherche
+  const [selectedSize, setSelectedSize] = useState<string | null>(null); // Taille sélectionnée
+  const [selectedColor, setSelectedColor] = useState<string | null>(null); // Couleur sélectionnée
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]); // Tableau d'articles sélectionnés
 
   // Filtrer les articles en fonction de la recherche
-  const filteredItems = items.filter((item) =>
-    item.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = dataStock.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Gérer la sélection d'un article
-  const handleSelectItem = (
-    item: string,
-    quantity: number,
-    size: string,
-    color: string
-  ) => {
-    if (
-      !selectedItems.some(
-        (selected) =>
-          selected.item === item &&
-          selected.size === size &&
-          selected.color === color
-      )
-    ) {
-      setSelectedItems([...selectedItems, { item, quantity, size, color }]);
-    }
-    setSearchTerm(""); // Réinitialiser la recherche
+  const updateTotalPrice = (totalQuantity: number, unitPrice: number) =>
+    totalQuantity * unitPrice;
+
+  // Gérer le changement de quantité pour chaque produit
+  const handleQuantityChange = (item: Stock, quantity: number) => {
+    setQuantities((prevQuantities) => ({
+      ...prevQuantities,
+      [item.name]: quantity,
+    }));
   };
 
-  // Supprimer un article sélectionné
-  const handleRemoveItem = (
-    itemToRemove: string,
-    sizeToRemove: string,
-    colorToRemove: string
-  ) => {
-    setSelectedItems(
-      selectedItems.filter(
-        (selected) =>
-          selected.item !== itemToRemove ||
-          selected.size !== sizeToRemove ||
-          selected.color !== colorToRemove
-      )
+  // Gérer la sélection de la taille
+  const handleSelectSize = (size: string) => {
+    setSelectedSize(size);
+  };
+
+  // Gérer la sélection de la couleur
+  const handleSelectColor = (color: string) => {
+    setSelectedColor(color);
+  };
+
+  // Ajouter l'article dans un tableau local et mettre à jour la quantité dans Firebase
+  const handleAddToCart = async (item: Stock) => {
+    if (!selectedSize || !selectedColor) {
+      alert("Veuillez sélectionner une taille et une couleur.");
+      return;
+    }
+
+    const selectedOption = item.options.find(
+      (option) => option.size === selectedSize && option.color === selectedColor
     );
+
+    if (!selectedOption) {
+      alert("Option sélectionnée non valide.");
+      return;
+    }
+
+    const quantity = quantities[item.name] || 1;
+
+    // Vérifier si l'article avec la même taille et couleur est déjà dans le tableau
+    const existingItemIndex = selectedItems.findIndex(
+      (selectedItem) =>
+        selectedItem.id === item.id &&
+        selectedItem.size === selectedSize &&
+        selectedItem.color === selectedColor
+    );
+
+    if (existingItemIndex !== -1) {
+      // Si l'article existe déjà, mettre à jour la quantité
+      const updatedItems = [...selectedItems];
+      updatedItems[existingItemIndex].quantity += quantity;
+      setSelectedItems(updatedItems);
+    } else {
+      // Ajouter un nouvel article
+      const newItem: SelectedItem = {
+        id: item.id,
+        name: item.name,
+        size: selectedSize,
+        color: selectedColor,
+        quantity: quantity,
+        Price: updateTotalPrice(quantity, item.unitPrice),
+      };
+      setSelectedItems((prevItems) => [...prevItems, newItem]);
+    }
+
+    // Mise à jour de la quantité dans Firebase
+    const itemDocRef = doc(db, "stock", item.id);
+    const updatedOptions = item.options.map((option) =>
+      option.size === selectedSize && option.color === selectedColor
+        ? { ...option, quantity: option.quantity - quantity }
+        : option
+    );
+
+    // Vérifiez si toutes les options de l'article ont une quantité de 0
+    const allOutOfStock = updatedOptions.every(option => option.quantity <= 0);
+    // Si toutes les options sont épuisées, supprimer le document du stock
+    if (allOutOfStock) {
+      await deleteDoc(itemDocRef); // Assurez-vous d'importer deleteDoc depuis Firebase
+    }
+
+    await updateDoc(itemDocRef, { options: updatedOptions });
+
+    // Alert pour indiquer que l'article a été ajouté
+    alert(`Ajouté ${quantity} de ${item.name} (taille: ${selectedSize}, couleur: ${selectedColor}) au panier.`);
   };
 
-  // Vendre les articles sélectionnés (placeholder pour action)
-  const handleSellItems = () => {
-    if (selectedItems.length > 0) {
-      alert(
-        `Vente confirmée pour : ${selectedItems
-          .map(
-            (selected) =>
-              `${selected.quantity} ${selected.item} (taille: ${selected.size}, couleur: ${selected.color})`
-          )
-          .join(", ")}`
+  // Fonction pour retirer un article du panier
+  const handleRemoveFromCart = async (item: SelectedItem) => {
+    // Trouver l'article dans le tableau
+    const existingItemIndex = selectedItems.findIndex(
+      (selectedItem) =>
+        selectedItem.id === item.id &&
+        selectedItem.size === item.size &&
+        selectedItem.color === item.color
+    );
+
+    if (existingItemIndex !== -1) {
+      // Récupérer la quantité pour mettre à jour Firebase
+      const quantityToRestore = selectedItems[existingItemIndex].quantity;
+
+      // Mise à jour de Firebase pour rétablir la quantité
+      const itemDocRef = doc(db, "stock", item.id);
+      const updatedOptions = dataStock.find(stockItem => stockItem.id === item.id)?.options.map((option) =>
+        option.size === item.size && option.color === item.color
+          ? { ...option, quantity: option.quantity + quantityToRestore }
+          : option
       );
-      setSelectedItems([]); // Réinitialiser les articles après la vente
-    } else {
-      alert("Aucun article sélectionné à vendre.");
+
+      if (updatedOptions) {
+        await updateDoc(itemDocRef, { options: updatedOptions });
+      }
+
+      // Retirer l'article du tableau local
+      setSelectedItems((prevItems) =>
+        prevItems.filter((_, index) => index !== existingItemIndex)
+      );
+
+      // Alert pour indiquer que l'article a été retiré
+      alert(`Retiré ${quantityToRestore} de ${item.name} (taille: ${item.size}, couleur: ${item.color}) du panier.`);
     }
   };
+
+  // Fonction pour ajouter les articles vendus dans Firebase
+  const handleAddToSales = async () => {
+    if (selectedItems.length === 0) {
+      alert("Aucun article sélectionné pour la vente.");
+      return;
+    }
+
+    // Récupérer la date actuelle
+    const dateOfSale = new Date();
+
+    // Parcourir chaque article sélectionné pour l'ajouter à la collection 'ventes'
+    for (const item of selectedItems) {
+      const saleData = {
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.Price,
+        date: dateOfSale,
+        // Ajoutez d'autres champs si nécessaire
+      };
+
+      // Ajouter à la collection 'ventes'
+      await addDoc(collection(db, "ventes"), saleData);
+    }
+
+    // Réinitialiser le panier après l'ajout
+    setSelectedItems([]);
+    alert("Articles ajoutés à la collection des ventes !");
+  };
+
+  useEffect(() => {
+    const getAllData = async () => {
+      const stockCollection = collection(db, "stock");
+      const stockSnapshot = await getDocs(stockCollection);
+      const stocksList = stockSnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id, // Associez l'ID du document ici
+      })) as Stock[];
+      setDataStock(stocksList);
+    };
+
+    getAllData();
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full h-full">
+
+    <div className="h-full w-full p-3 bg-white rounded-md border relative">
+      <div className="flex justify-between">
+
         <h2 className="text-2xl font-bold text-center mb-6">
           Recherche et Sélection d'Articles
         </h2>
-
-        {/* Barre de recherche */}
-        <input
-          type="text"
-          placeholder="Rechercher un vêtement"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="block w-full p-3 border border-gray-300 rounded-lg mb-4"
-        />
-
-        {/* Liste des résultats filtrés */}
-        {searchTerm && (
-          <ul className="bg-white border border-gray-300 rounded-lg max-h-72 overflow-y-auto">
-            {filteredItems.length > 0 ? (
-              filteredItems.map((item, index) => (
-                <li key={index} className="p-4 border-b">
-                  {/* Sélection de la quantité, taille et couleur */}
-                  <div className="flex flex-col">
-                    <span className="font-semibold">{item}</span>
-                    <div className="mt-2">
-                      <label className="mr-2">Quantité :</label>
-                      <input
-                        type="number"
-                        min="1"
-                        defaultValue="1"
-                        id={`quantity-${index}`}
-                        className="border border-gray-300 rounded-lg p-2 w-16"
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <span>Tailles disponibles :</span>
-                      <div className="flex space-x-2 mt-2">
-                        {sizes.map((size) => (
-                          <label key={size} className="flex items-center">
-                            <input
-                              type="radio"
-                              name={`size-${index}`}
-                              value={size}
-                              className="mr-1"
-                              defaultChecked={size === "M"}
-                            />
-                            {size}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Sélection de la couleur */}
-                    <div className="mt-2">
-                      <span>Couleurs disponibles :</span>
-                      <div className="flex space-x-2 mt-2">
-                        {colors.map((color) => (
-                          <label key={color} className="flex items-center">
-                            <input
-                              type="radio"
-                              name={`color-${index}`}
-                              value={color}
-                              className="mr-1"
-                              defaultChecked={color === "Rouge"} // Valeur par défaut
-                            />
-                            {color}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        const quantityInput = document.getElementById(
-                          `quantity-${index}`
-                        ) as HTMLInputElement;
-                        const selectedSize = document.querySelector(
-                          `input[name="size-${index}"]:checked`
-                        ) as HTMLInputElement;
-                        const selectedColor = document.querySelector(
-                          `input[name="color-${index}"]:checked`
-                        ) as HTMLInputElement;
-
-                        const quantity = parseInt(quantityInput.value, 10);
-                        const size = selectedSize?.value || "M";
-                        const color = selectedColor?.value || "Rouge"; // Valeur par défaut
-
-                        handleSelectItem(item, quantity, size, color);
-                      }}
-                      className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-                    >
-                      Ajouter
-                    </button>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="p-2 text-gray-500">Aucun vêtement trouvé</li>
-            )}
-          </ul>
-        )}
-
-        {/* Articles sélectionnés */}
-        {selectedItems.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-xl font-semibold mb-4">
-              Articles Sélectionnés :
-            </h3>
-            <ul className="space-y-2">
-              {selectedItems.map((selected, index) => (
-                <li
-                  key={index}
-                  className="flex justify-between items-center p-3 bg-gray-100 border rounded-lg"
-                >
-                  {selected.quantity} {selected.item} (taille: {selected.size},
-                  couleur: {selected.color})
-                  <button
-                    onClick={() =>
-                      handleRemoveItem(
-                        selected.item,
-                        selected.size,
-                        selected.color
-                      )
-                    }
-                    className="bg-red-500 text-white p-1 rounded-full text-sm hover:bg-red-600"
-                  >
-                    Supprimer
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {/* Bouton pour vendre les articles sélectionnés */}
+        <Dialog>
+          <DialogTrigger>
+            <div className="mr-9">
+              <div className="relative">
+                <SlBasket size={45} />
+                <span className="absolute h-5 w-5 rounded-full bg-red-500 text-white top-0 right-0">
+                  {selectedItems.length}
+                </span>
+              </div>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="mt-3">
+            <h1 className="text-xl font-bold mb-2">
+              Articles dans le Panier
+            </h1>
+            <table className="min-w-full border border-gray-300 mt-2">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 p-2">Nom</th>
+                  <th className="border border-gray-300 p-2">Couleur</th>
+                  <th className="border border-gray-300 p-2">Quantité</th>
+                  <th className="border border-gray-300 p-2">Taille</th>
+                  <th className="border border-gray-300 p-2">Prix</th>
+                  <th className="border border-gray-300 p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedItems.map((option, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="border border-gray-300 p-2">{option.name}</td>
+                    <td className="border border-gray-300 p-2">
+                      <div className="p-4 focus:border-black border rounded-md" style={{ backgroundColor: option.color }} />
+                    </td>
+                    <td className="border border-gray-300 p-2">{option.quantity}</td>
+                    <td className="border border-gray-300 p-2">{option.size}</td>
+                    <td className="border border-gray-300 p-2">{option.Price}</td>
+                    <td className="border border-gray-300 p-2">
+                      <button onClick={() => handleRemoveFromCart(option)} className="text-red-500">
+                        <IoMdCloseCircle />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Ajout du bouton pour enregistrer les ventes */}
             <button
-              onClick={handleSellItems}
-              className="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600"
+              onClick={handleAddToSales}
+              className="mt-4 p-2 bg-green-500 text-white rounded-md hover:bg-green-600"
             >
-              Vendre les articles
+              Enregistrer les ventes
             </button>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+
+      <div>
+        <div className="flex items-center bg-white px-4 rounded-md py-2 w-[400px] gap-x-4 border">
+          <input
+            type="text"
+            placeholder="Recherche"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input w-[90%] h-7 rounded outline-none"
+          />
+          <LuSearch size={25} />
+        </div>
+        <div className="mt-4">
+          <h1 className="text-lg font-bold">Résultat de recherche de produit</h1>
+          <div className="mt-2 flex flex-col gap-y-3 w-1/2">
+            {filteredItems.map((stockItem, index) => (
+              <div key={index} className="border rounded-md p-4 flex flex-col gap-y-2 relative">
+                <div className="flex gap-x-3">
+                  <span>nom :</span>
+                  <span>{stockItem.name}</span>
+                </div>
+                <div className="flex gap-x-2 items-center">
+                  <span>Quantité :</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantities[stockItem.name] || 1} // Quantité spécifique à ce produit
+                    onChange={(e) =>
+                      handleQuantityChange(stockItem, parseInt(e.target.value))
+                    }
+                    className="h-9 border outline-none rounded-md p-2 w-[80px]"
+                  />
+                </div>
+                <div className="flex flex-col gap-y-2">
+                  <span>categorie : <span>{stockItem.category}</span></span>
+                  <span>Prix : {updateTotalPrice(quantities[stockItem.name] || 1, stockItem.unitPrice)} FCFA</span>
+                </div>
+                <div className="flex gap-x-2 items-center">
+                  <span>taille :</span>
+                  <div className="flex gap-x-3 items-center">
+                    {stockItem.options.map((option, idx) => (
+                      <div key={idx} className="flex gap-x-1 items-center">
+                        <input
+                          type="radio"
+                          id={`${stockItem.id}-size-${option.size}`}
+                          name={`${stockItem.id}-size`}
+                          value={option.size}
+                          onChange={() => handleSelectSize(option.size)}
+                        />
+                        <label htmlFor={`${stockItem.id}-size-${option.size}`}>{option.size}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-x-2 items-center">
+                  <span>couleur :</span>
+                  <div className="flex gap-x-3 items-center">
+                    {stockItem.options.map((option, idx) => (
+                      <div key={idx} className="flex gap-x-1 items-center" >
+                        <input
+                          type="radio"
+                          id={`${stockItem.id}-color-${option.color}`}
+                          name={`${stockItem.id}-color`}
+                          value={option.color}
+                          onChange={() => handleSelectColor(option.color)}
+                        />
+                        <div className="p-3 focus:border-black border rounded-md" style={{ backgroundColor: option.color }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleAddToCart(stockItem)}
+                  className="absolute right-3 top-2 text-green-600 hover:text-green-700 rounded-md border p-1"
+                >
+                  <BiSolidCartAdd size={30} />
+                </button>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
