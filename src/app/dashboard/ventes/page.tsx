@@ -336,6 +336,7 @@ const Ventes = () => {
                           onChange={() => handleSelectSize(option.size)}
                         />
                         <label htmlFor={`${stockItem.id}-size-${option.size}`}>{option.size}</label>
+
                       </div>
                     ))}
                   </div>
