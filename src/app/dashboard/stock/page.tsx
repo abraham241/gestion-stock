@@ -1,7 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import Section from '../_components/section';
-import Image from 'next/image';
+import { BiSpreadsheet } from "react-icons/bi";
 import {
   Table,
   TableBody,
@@ -12,17 +11,15 @@ import {
 } from '@/components/ui/table';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { File, ListFilter, MoreHorizontal, PlusCircle } from 'lucide-react';
+import { File, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LuSearch } from 'react-icons/lu';
 import { format } from 'date-fns';
@@ -35,58 +32,108 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/Firebase/firebase.config';
+import { isSameDay } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-type Produit = {
-  categorieProduit: string;
-  codeBarProduit: string;
-  couleur: string;
-  date_creation: {
-    seconds: number;
-    nanoseconds: number;
-  };
-  descriptionProduit: string;
-  imageProduit: string;
-  nomProduit: string;
-  prix: string;
-  quantite: string;
-  seuilAlerte: string;
-  taille: string;
-  totalStock: string;
+
+
+type Stock = {
+  id: string;
+  name: string;
+  dateAdded: Date;
+  category: string;
+  unitPrice: number;
+  totalQuantity: number;
+  totalPrice: number;
+  options: {
+    size: string;
+    color: string;
+    quantity: number;
+    seuil: number;
+    imageUrl: string;
+  }[];
 };
+
+function formatDateToFrench(dateString: string): string {
+  const date = new Date(dateString);
+
+  const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  const mois = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+  const jour = joursSemaine[date.getUTCDay()];
+  const jourDuMois = date.getUTCDate();
+  const moisFrancais = mois[date.getUTCMonth()];
+  const annee = date.getUTCFullYear();
+  const heures = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+
+  return `${jour} ${jourDuMois} ${moisFrancais} ${annee} à ${heures}h${minutes}`;
+}
+
+function formatDatetoFrench(date: Date): string {
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  };
+  return date.toLocaleDateString('fr-FR', options);
+}
 
 const Page = () => {
   const [date, setDate] = useState<Date>();
   const [categories, setCategories] = useState([]);
   const [categorieSelected, setCategorieSelected] = useState('');
-  const [dataStock, setDataStock] = useState<Produit[]>([]);
-  const [dataFliter, setDataFilter] = useState(dataStock);
-
-  function afficherDateCreation(date_creation: { seconds: number; nanoseconds: number }): string {
-    const date = new Date(date_creation.seconds * 1000); // Convertir les secondes en millisecondes
-    return date.toLocaleString(); // Affiche la date et l'heure dans un format lisible
-  }
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dataStock, setDataStock] = useState<Stock[]>([]);
+  const [dataFliter, setDataFilter] = useState<Stock[]>([]);
 
   useEffect(() => {
     const getAllData = async () => {
-      const categoriesCollection = collection(db, "categorie");  // Récupérer la collection 'categorie'
-      const categoriesSnapshot = await getDocs(categoriesCollection);  // Récupérer tous les documents de la collection
-      const categoriesList = categoriesSnapshot.docs.map((doc) => doc.data());  // Transformer les documents en données
-      setCategories(categoriesList[0].Catégories);  // Mettre à jour l'état des catégories avec les données
+      const categoriesCollection = collection(db, "categorie");
+      const categoriesSnapshot = await getDocs(categoriesCollection);
+      const categoriesList = categoriesSnapshot.docs.map((doc) => doc.data());
+      setCategories(categoriesList[0].Catégories);
 
-      const stock = collection(db, 'stock');
-      const stockSnapshot = await getDocs(stock);
-      const stocksList =stockSnapshot.docs.map((doc) => doc.data()) as Produit[];
-      setDataStock(stocksList)
+      const stockCollection = collection(db, "stock");
+      const stockSnapshot = await getDocs(stockCollection);
+      const stocksList = stockSnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as Stock[];
+      setDataStock(stocksList);
+      setDataFilter(stocksList);
     };
 
     getAllData();
-  }, [])
+  }, []);
 
-  useEffect(()=>{
-    setDataFilter(dataStock.filter(stock => stock.categorieProduit.toLowerCase() === categorieSelected.toLowerCase()))
-  },[categorieSelected])
+  useEffect(() => {
+    const filteredData = dataStock.filter(stock => {
+      const isCategoryMatch = categorieSelected ? stock.category.toLowerCase() === categorieSelected.toLowerCase() : true;
+      const isSearchMatch = searchTerm ? stock.name.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+      const isDateMatch = date ? isSameDay(stock.dateAdded, date) : true;
+      return isCategoryMatch && isSearchMatch && isDateMatch;
+    });
+    setDataFilter(filteredData);
+  }, [categorieSelected, searchTerm, date, dataStock]);
+
+  // Fonction pour gérer la suppression
+  const handleDelete = async (id: string) => {
+    const stockDocRef = doc(db, "stock", id);
+    await deleteDoc(stockDocRef);
+    setDataStock(prevData => prevData.filter(stock => stock.id !== id));
+    setDataFilter(prevData => prevData.filter(stock => stock.id !== id));
+  };
 
   return (
     <div className="w-full">
@@ -101,14 +148,23 @@ const Page = () => {
                     Manage your products and view their sales performance.
                   </CardDescription>
                 </div>
-                <div className="flex flex-col items-center gap-y-2">
-                  <div className="flex items-center bg-white px-4 rounded-md py-2 w-[250px] gap-x-4 shadow-xl border justify-end">
-                    <input
-                      type="text"
-                      placeholder="Recherche"
-                      className="input w-[90%] h-7 rounded outline-none"
-                    />
-                    <LuSearch size={25} />
+                <div className="flex flex-col items-center gap-y-4">
+                  <div className='flex justify-between gap-x-10'>
+                    <div className="flex items-center bg-white px-4 rounded-md py-2 w-[250px] gap-x-4 shadow-xl border justify-end">
+                      <input
+                        type="text"
+                        placeholder="Recherche"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="input w-[90%] h-7 rounded outline-none"
+                      />
+                      <LuSearch size={25} />
+                    </div>
+                    <div>
+                      <button className='border px-3 py-2 rounded-md' onClick={() => { setDataFilter(dataStock); setCategorieSelected('') }}>
+                        <BiSpreadsheet size={35} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex gap-x-3">
                     <Popover>
@@ -121,7 +177,7 @@ const Page = () => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {date ? format(date, 'PPP') : <span>cliquer sur une date</span>}
+                          {date ? formatDatetoFrench(date) : <span>cliquer sur une date</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="p-0">
@@ -147,11 +203,7 @@ const Page = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="hidden w-[100px] sm:table-cell">
-                        <span className="sr-only">Image</span>
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Seuil d'alerte</TableHead>
+                      <TableHead>Nom du produit</TableHead>
                       <TableHead className="hidden md:table-cell">Prix</TableHead>
                       <TableHead className="hidden md:table-cell">Quantité totale</TableHead>
                       <TableHead className="hidden md:table-cell">Date d'ajout</TableHead>
@@ -161,24 +213,12 @@ const Page = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dataFliter.length !==0 && dataFliter.map((stoc, index: number) => (
+                    {dataFliter.length !== 0 && dataFliter.map((stoc, index: number) => (
                       <TableRow key={index}>
-                        <TableCell className="hidden sm:table-cell">
-                          <img
-                            alt="Product image"
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src={stoc.imageProduit}
-                            width="64"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{stoc.nomProduit}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{stoc.seuilAlerte}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{stoc.prix}</TableCell>
-                        <TableCell className="hidden md:table-cell">{stoc.quantite}</TableCell>
-                        <TableCell className="hidden md:table-cell">{afficherDateCreation(stoc.date_creation)}</TableCell>
+                        <TableCell className="font-medium">{stoc.name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{stoc.unitPrice}{' '}FCFA</TableCell>
+                        <TableCell className="hidden md:table-cell">{stoc.totalQuantity}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatDateToFrench(stoc.dateAdded.toLocaleString())}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -187,10 +227,45 @@ const Page = () => {
                                 <span className="sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" >
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
+                              <Dialog>
+                                <DropdownMenuLabel>
+                                  <DialogTrigger>
+                                    <span >
+                                      Détaille
+                                    </span>
+                                  </DialogTrigger>
+                                </DropdownMenuLabel>
+
+                                <DialogContent>
+                                  <table className="min-w-full border border-gray-300 mt-7">
+                                    <thead>
+                                      <tr className="bg-gray-100">
+                                        <th className="border border-gray-300 p-2">Nom</th>
+                                        <th className="border border-gray-300 p-2">Couleur</th>
+                                        <th className="border border-gray-300 p-2">Quantité</th>
+                                        <th className="border border-gray-300 p-2">Seuil d'alerte</th>
+                                        <th className="border border-gray-300 p-2">Taille</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {stoc.options.map((option, index) => (
+                                        <tr key={index} className="border-b">
+                                          <td className="border border-gray-300 p-2">{stoc.name}</td>
+                                          <td className="border border-gray-300 p-2">
+                                            <div className="p-4 focus:border-black border rounded-md" style={{ backgroundColor: option.color }} />
+                                          </td>
+                                          <td className="border border-gray-300 p-2">{option.quantity}</td>
+                                          <td className="border border-gray-300 p-2">{option.seuil}</td>
+                                          <td className="border border-gray-300 p-2">{option.size}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </DialogContent>
+                              </Dialog>
+                              <DropdownMenuItem onClick={() => handleDelete(stoc.id)}>Supprimer</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

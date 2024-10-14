@@ -8,7 +8,7 @@ import { Chart } from './_components/chart';
 const page = () => {
   return (
     <main className='flex w-full gap-x-5 h-[100vh] flex-none'>
-      <div className='w-[70%] h-full flex flex-col justify-between'>
+      <div className='w-[70%] h-full flex flex-col justify-between gap-y-10'>
         <div className='w-full flex flex-col gap-y-3'>
           <div className='flex justify-between w-full'>
             <Section className='bg-white flex-none p-4 w-[47%] flex flex-col gap-y-2 justify-between'>
@@ -102,11 +102,15 @@ const page = () => {
         </div>
       </div>
       <div className='w-[28%] h-full flex flex-col justify-between'>
-        <Section className='h-[58%] w-full bg-white flex-none'>
-          <h1></h1>
+        <Section className='h-[58%] w-full bg-white flex-none p-2'>
+          <h1 className='text-xl font-bold'>
+            Produit recement vendu
+          </h1>
         </Section>
         <Section className='h-[40%] w-full bg-white flex-none'>
-          <h1></h1>
+          <h1>
+            
+          </h1>
         </Section>
       </div>
     </main>
