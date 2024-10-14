@@ -1,7 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import Section from '../_components/section';
-import Image from 'next/image';
+import { BiSpreadsheet } from "react-icons/bi";
 import {
   Table,
   TableBody,
@@ -38,7 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/Firebase/firebase.config';
 
-type Produit = {
+export type Produit = {
   categorieProduit: string;
   codeBarProduit: string;
   couleur: string;
@@ -54,14 +53,16 @@ type Produit = {
   seuilAlerte: string;
   taille: string;
   totalStock: string;
+  id?:string
 };
 
 const Page = () => {
   const [date, setDate] = useState<Date>();
   const [categories, setCategories] = useState([]);
   const [categorieSelected, setCategorieSelected] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // État pour gérer l'input de recherche
   const [dataStock, setDataStock] = useState<Produit[]>([]);
-  const [dataFliter, setDataFilter] = useState(dataStock);
+  const [dataFliter, setDataFilter] = useState<Produit[]>([]);
 
   function afficherDateCreation(date_creation: { seconds: number; nanoseconds: number }): string {
     const date = new Date(date_creation.seconds * 1000); // Convertir les secondes en millisecondes
@@ -77,16 +78,23 @@ const Page = () => {
 
       const stock = collection(db, 'stock');
       const stockSnapshot = await getDocs(stock);
-      const stocksList =stockSnapshot.docs.map((doc) => doc.data()) as Produit[];
-      setDataStock(stocksList)
+      const stocksList = stockSnapshot.docs.map((doc) => doc.data()) as Produit[];
+      setDataStock(stocksList);
+      setDataFilter(stocksList); // Initialement, montrer tous les produits
     };
 
     getAllData();
-  }, [])
+  }, []);
 
-  useEffect(()=>{
-    setDataFilter(dataStock.filter(stock => stock.categorieProduit.toLowerCase() === categorieSelected.toLowerCase()))
-  },[categorieSelected])
+  // Filtrage des produits en fonction de la catégorie et du terme de recherche
+  useEffect(() => {
+    const filteredData = dataStock.filter(stock => {
+      const isCategoryMatch = categorieSelected ? stock.categorieProduit.toLowerCase() === categorieSelected.toLowerCase() : true;
+      const isSearchMatch = searchTerm ? stock.nomProduit.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+      return isCategoryMatch && isSearchMatch;
+    });
+    setDataFilter(filteredData);
+  }, [categorieSelected, searchTerm, dataStock]);
 
   return (
     <div className="w-full">
@@ -101,14 +109,23 @@ const Page = () => {
                     Manage your products and view their sales performance.
                   </CardDescription>
                 </div>
-                <div className="flex flex-col items-center gap-y-2">
-                  <div className="flex items-center bg-white px-4 rounded-md py-2 w-[250px] gap-x-4 shadow-xl border justify-end">
-                    <input
-                      type="text"
-                      placeholder="Recherche"
-                      className="input w-[90%] h-7 rounded outline-none"
-                    />
-                    <LuSearch size={25} />
+                <div className="flex flex-col items-center gap-y-4">
+                  <div className='flex justify-between gap-x-10'>
+                    <div className="flex items-center bg-white px-4 rounded-md py-2 w-[250px] gap-x-4 shadow-xl border justify-end">
+                      <input
+                        type="text"
+                        placeholder="Recherche"
+                        value={searchTerm} // Lier l'input à l'état de recherche
+                        onChange={(e) => setSearchTerm(e.target.value)} // Mettre à jour l'état à chaque changement
+                        className="input w-[90%] h-7 rounded outline-none"
+                      />
+                      <LuSearch size={25} />
+                    </div>
+                    <div>
+                      <button className='border px-3 py-2 rounded-md' onClick={()=> {setDataFilter(dataStock); setCategorieSelected('')}}>
+                        <BiSpreadsheet size={35}/>
+                      </button>
+                    </div>
                   </div>
                   <div className="flex gap-x-3">
                     <Popover>
@@ -161,7 +178,7 @@ const Page = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dataFliter.length !==0 && dataFliter.map((stoc, index: number) => (
+                    {dataFliter.length !== 0 && dataFliter.map((stoc, index: number) => (
                       <TableRow key={index}>
                         <TableCell className="hidden sm:table-cell">
                           <img

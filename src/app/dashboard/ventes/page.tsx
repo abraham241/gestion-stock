@@ -1,72 +1,33 @@
 "use client"; // Indiquer que c'est un composant Client
 
-import React, { useState } from "react";
+import { db } from "@/Firebase/firebase.config";
+import { collection, getDocs } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { Produit } from "../stock/page";
 
 const Ventes = () => {
+  const [dataStock, setDataStock] = useState<Produit[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>(""); // Termes de recherche
   const [selectedItems, setSelectedItems] = useState<
-    { item: string; quantity: number; size: string; color: string }[] // Inclure la couleur ici
-  >([]); // Articles sélectionnés avec quantité, taille et couleur
-
-  // Liste des articles de vêtements
-  const items = [
-    "T-shirt",
-    "Pantalon",
-    "Veste",
-    "Robe",
-    "Chemise",
-    "Short",
-    "Sweatshirt",
-    "Jupe",
-    "Blouson",
-    "Manteau",
-  ];
-
-  // Tailles disponibles
-  const sizes = ["S", "M", "L", "XL"];
-
-  // Couleurs disponibles
-  const colors = ["Rouge", "Bleu", "Vert", "Jaune", "Noir", "Blanc"]; // Nouvelle liste de couleurs
+    { item: Produit; quantity: number }[]
+  >([]); // Articles sélectionnés avec quantité
 
   // Filtrer les articles en fonction de la recherche
-  const filteredItems = items.filter((item) =>
-    item.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = dataStock.filter((item) =>
+    item.nomProduit.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Gérer la sélection d'un article
-  const handleSelectItem = (
-    item: string,
-    quantity: number,
-    size: string,
-    color: string
-  ) => {
-    if (
-      !selectedItems.some(
-        (selected) =>
-          selected.item === item &&
-          selected.size === size &&
-          selected.color === color
-      )
-    ) {
-      setSelectedItems([...selectedItems, { item, quantity, size, color }]);
+  const handleSelectItem = (item: Produit, quantity: number) => {
+    if (!selectedItems.some((selected) => selected.item.codeBarProduit === item.codeBarProduit)) {
+      setSelectedItems([...selectedItems, { item, quantity }]);
     }
     setSearchTerm(""); // Réinitialiser la recherche
   };
 
   // Supprimer un article sélectionné
-  const handleRemoveItem = (
-    itemToRemove: string,
-    sizeToRemove: string,
-    colorToRemove: string
-  ) => {
-    setSelectedItems(
-      selectedItems.filter(
-        (selected) =>
-          selected.item !== itemToRemove ||
-          selected.size !== sizeToRemove ||
-          selected.color !== colorToRemove
-      )
-    );
+  const handleRemoveItem = (itemToRemove: Produit) => {
+    setSelectedItems(selectedItems.filter(selected => selected.item.codeBarProduit !== itemToRemove.codeBarProduit));
   };
 
   // Vendre les articles sélectionnés (placeholder pour action)
@@ -76,7 +37,7 @@ const Ventes = () => {
         `Vente confirmée pour : ${selectedItems
           .map(
             (selected) =>
-              `${selected.quantity} ${selected.item} (taille: ${selected.size}, couleur: ${selected.color})`
+              `${selected.quantity} ${selected.item.nomProduit} (taille: ${selected.item.taille}, couleur: ${selected.item.couleur})`
           )
           .join(", ")}`
       );
@@ -85,6 +46,17 @@ const Ventes = () => {
       alert("Aucun article sélectionné à vendre.");
     }
   };
+
+  useEffect(() => {
+    const getAllData = async () => {
+      const stock = collection(db, 'stock');
+      const stockSnapshot = await getDocs(stock);
+      const stocksList = stockSnapshot.docs.map((doc) => doc.data()) as Produit[];
+      setDataStock(stocksList);
+    };
+
+    getAllData();
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center bg-gray-100">
@@ -106,75 +78,27 @@ const Ventes = () => {
         {searchTerm && (
           <ul className="bg-white border border-gray-300 rounded-lg max-h-72 overflow-y-auto">
             {filteredItems.length > 0 ? (
-              filteredItems.map((item, index) => (
-                <li key={index} className="p-4 border-b">
-                  {/* Sélection de la quantité, taille et couleur */}
+              filteredItems.map((item) => (
+                <li key={item.codeBarProduit} className="p-4 border-b">
                   <div className="flex flex-col">
-                    <span className="font-semibold">{item}</span>
+                    <span className="font-semibold">{item.nomProduit}</span>
                     <div className="mt-2">
                       <label className="mr-2">Quantité :</label>
                       <input
                         type="number"
                         min="1"
                         defaultValue="1"
-                        id={`quantity-${index}`}
                         className="border border-gray-300 rounded-lg p-2 w-16"
                       />
-                    </div>
-                    <div className="mt-2">
-                      <span>Tailles disponibles :</span>
-                      <div className="flex space-x-2 mt-2">
-                        {sizes.map((size) => (
-                          <label key={size} className="flex items-center">
-                            <input
-                              type="radio"
-                              name={`size-${index}`}
-                              value={size}
-                              className="mr-1"
-                              defaultChecked={size === "M"}
-                            />
-                            {size}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Sélection de la couleur */}
-                    <div className="mt-2">
-                      <span>Couleurs disponibles :</span>
-                      <div className="flex space-x-2 mt-2 ">
-                        {colors.map((color) => (
-                          <label key={color} className="flex items-center">
-                            <input
-                              type="radio"
-                              name={`color-${index}`}
-                              value={color}
-                              className="mr-1"
-                              defaultChecked={color === "Rouge"} // Valeur par défaut
-                            />
-                            {color}
-                          </label>
-                        ))}
-                      </div>
                     </div>
 
                     <button
                       onClick={() => {
-                        const quantityInput = document.getElementById(
-                          `quantity-${index}`
+                        const quantityInput = document.querySelector(
+                          'input[type="number"]'
                         ) as HTMLInputElement;
-                        const selectedSize = document.querySelector(
-                          `input[name="size-${index}"]:checked`
-                        ) as HTMLInputElement;
-                        const selectedColor = document.querySelector(
-                          `input[name="color-${index}"]:checked`
-                        ) as HTMLInputElement;
-
                         const quantity = parseInt(quantityInput.value, 10);
-                        const size = selectedSize?.value || "M";
-                        const color = selectedColor?.value || "Rouge"; // Valeur par défaut
-
-                        handleSelectItem(item, quantity, size, color);
+                        handleSelectItem(item, quantity);
                       }}
                       className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
                     >
@@ -198,19 +122,12 @@ const Ventes = () => {
             <ul className="space-y-2">
               {selectedItems.map((selected, index) => (
                 <li
-                  key={index}
+                  key={selected.item.codeBarProduit}
                   className="flex justify-between items-center p-3 bg-gray-100 border rounded-lg"
                 >
-                  {selected.quantity} {selected.item} (taille: {selected.size},
-                  couleur: {selected.color})
+                  {selected.quantity} {selected.item.nomProduit} (taille: {selected.item.taille}, couleur: {selected.item.couleur})
                   <button
-                    onClick={() =>
-                      handleRemoveItem(
-                        selected.item,
-                        selected.size,
-                        selected.color
-                      )
-                    }
+                    onClick={() => handleRemoveItem(selected.item)}
                     className="bg-red-500 text-white p-1 rounded-full text-sm hover:bg-red-600"
                   >
                     Supprimer
