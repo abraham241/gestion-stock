@@ -225,8 +225,10 @@ const Ventes = () => {
   }, []);
 
   return (
+
     <div className="h-full w-full p-3 bg-white rounded-md border relative">
       <div className="flex justify-between">
+
         <h2 className="text-2xl font-bold text-center mb-6">
           Recherche et Sélection d'Articles
         </h2>
@@ -336,7 +338,6 @@ const Ventes = () => {
                           onChange={() => handleSelectSize(option.size)}
                         />
                         <label htmlFor={`${stockItem.id}-size-${option.size}`}>{option.size}</label>
-
                       </div>
                     ))}
                   </div>
