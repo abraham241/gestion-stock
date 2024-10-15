@@ -34,7 +34,7 @@ type Stock = {
   }[];
 };
 
-type SelectedItem = {
+ export type SelectedItem = {
   id: string;
   name: string;
   size: string;
@@ -77,8 +77,7 @@ const Ventes = () => {
     setSelectedColor(color);
   };
 
-  // Ajouter l'article dans un tableau local et mettre à jour la quantité dans Firebase
-  const handleAddToCart = async (item: Stock) => {
+  const handleAddToCart = (item: Stock) => {
     if (!selectedSize || !selectedColor) {
       alert("Veuillez sélectionner une taille et une couleur.");
       return;
@@ -121,29 +120,11 @@ const Ventes = () => {
       setSelectedItems((prevItems) => [...prevItems, newItem]);
     }
 
-    // Mise à jour de la quantité dans Firebase
-    const itemDocRef = doc(db, "stock", item.id);
-    const updatedOptions = item.options.map((option) =>
-      option.size === selectedSize && option.color === selectedColor
-        ? { ...option, quantity: option.quantity - quantity }
-        : option
-    );
-
-    // Vérifiez si toutes les options de l'article ont une quantité de 0
-    const allOutOfStock = updatedOptions.every(option => option.quantity <= 0);
-    // Si toutes les options sont épuisées, supprimer le document du stock
-    if (allOutOfStock) {
-      await deleteDoc(itemDocRef); // Assurez-vous d'importer deleteDoc depuis Firebase
-    }
-
-    await updateDoc(itemDocRef, { options: updatedOptions });
-
-    // Alert pour indiquer que l'article a été ajouté
     alert(`Ajouté ${quantity} de ${item.name} (taille: ${selectedSize}, couleur: ${selectedColor}) au panier.`);
   };
 
-  // Fonction pour retirer un article du panier
-  const handleRemoveFromCart = async (item: SelectedItem) => {
+
+  const handleRemoveFromCart = (item: SelectedItem) => {
     // Trouver l'article dans le tableau
     const existingItemIndex = selectedItems.findIndex(
       (selectedItem) =>
@@ -151,43 +132,27 @@ const Ventes = () => {
         selectedItem.size === item.size &&
         selectedItem.color === item.color
     );
-
+  
     if (existingItemIndex !== -1) {
-      // Récupérer la quantité pour mettre à jour Firebase
-      const quantityToRestore = selectedItems[existingItemIndex].quantity;
-
-      // Mise à jour de Firebase pour rétablir la quantité
-      const itemDocRef = doc(db, "stock", item.id);
-      const updatedOptions = dataStock.find(stockItem => stockItem.id === item.id)?.options.map((option) =>
-        option.size === item.size && option.color === item.color
-          ? { ...option, quantity: option.quantity + quantityToRestore }
-          : option
-      );
-
-      if (updatedOptions) {
-        await updateDoc(itemDocRef, { options: updatedOptions });
-      }
-
       // Retirer l'article du tableau local
       setSelectedItems((prevItems) =>
         prevItems.filter((_, index) => index !== existingItemIndex)
       );
-
-      // Alert pour indiquer que l'article a été retiré
-      alert(`Retiré ${quantityToRestore} de ${item.name} (taille: ${item.size}, couleur: ${item.color}) du panier.`);
+  
+      alert(`Retiré ${item.quantity} de ${item.name} (taille: ${item.size}, couleur: ${item.color}) du panier.`);
     }
   };
+  
 
-  // Fonction pour ajouter les articles vendus dans Firebase
   const handleAddToSales = async () => {
     if (selectedItems.length === 0) {
       alert("Aucun article sélectionné pour la vente.");
       return;
     }
-
+  
     // Récupérer la date actuelle
     const dateOfSale = new Date();
-
+  
     // Parcourir chaque article sélectionné pour l'ajouter à la collection 'ventes'
     for (const item of selectedItems) {
       const saleData = {
@@ -200,15 +165,47 @@ const Ventes = () => {
         date: dateOfSale,
         // Ajoutez d'autres champs si nécessaire
       };
-
+  
       // Ajouter à la collection 'ventes'
       await addDoc(collection(db, "ventes"), saleData);
+  
+      // Mise à jour des quantités dans Firebase après la vente
+      const stockItem = dataStock.find((stockItem) => stockItem.id === item.id);
+  
+      if (stockItem) {
+        const itemDocRef = doc(db, "stock", stockItem.id);
+  
+        // Mise à jour des options (taille/couleur)
+        const updatedOptions = stockItem.options.map((option) =>
+          option.size === item.size && option.color === item.color
+            ? { ...option, quantity: option.quantity - item.quantity } // Réduire la quantité de l'option spécifique
+            : option
+        );
+  
+        // Mise à jour de la quantité totale de l'article
+        const newTotalQuantity = stockItem.totalQuantity - item.quantity; // Réduire la quantité totale
+  
+        // Vérifiez si toutes les options de l'article ont une quantité de 0
+        const allOutOfStock = updatedOptions.every((option) => option.quantity <= 0);
+  
+        // Si toutes les options sont épuisées, supprimer l'article du stock
+        if (allOutOfStock) {
+          await deleteDoc(itemDocRef); // Suppression de l'article si toutes les quantités sont épuisées
+        } else {
+          await updateDoc(itemDocRef, {
+            options: updatedOptions,
+            totalQuantity: newTotalQuantity, // Mettre à jour la quantité totale
+          });
+        }
+      }
     }
-
+  
     // Réinitialiser le panier après l'ajout
     setSelectedItems([]);
     alert("Articles ajoutés à la collection des ventes !");
   };
+  
+
 
   useEffect(() => {
     const getAllData = async () => {
