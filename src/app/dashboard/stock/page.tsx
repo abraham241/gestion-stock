@@ -232,7 +232,7 @@ const Page = () => {
                               <Dialog>
                                 <DropdownMenuLabel>
                                   <DialogTrigger>
-                                    <span >
+                                    <span>
                                       Détaille
                                     </span>
                                   </DialogTrigger>
