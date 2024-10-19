@@ -99,7 +99,7 @@ const Page = () => {
 
   useEffect(() => {
     const getAllData = async () => {
-      const categoriesCollection = collection(db, "categorie");
+      const categoriesCollection = collection(db, "Catégorie");
       const categoriesSnapshot = await getDocs(categoriesCollection);
       const categoriesList = categoriesSnapshot.docs.map((doc) => doc.data());
       setCategories(categoriesList[0].Catégories);

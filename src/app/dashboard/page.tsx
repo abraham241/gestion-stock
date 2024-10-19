@@ -48,7 +48,7 @@ const page = () => {
                   Total du Mois
                 </span>
                 <div className='text-3xl font-bold'>
-                  275900 FCFA
+                  0 FCFA
                 </div>
               </div>
             </Section>
@@ -66,7 +66,7 @@ const page = () => {
                   Total de la Semaine
                 </span>
                 <div className='text-3xl font-bold'>
-                  100900 FCFA
+                  0 FCFA
                 </div>
               </div>
             </Section>
@@ -87,7 +87,7 @@ const page = () => {
                 </span>
                 <div className='font-bold'>
                   <span className='text-3xl'>
-                    80
+                    0
                   </span>
                   <span>
                     Articles
@@ -110,7 +110,7 @@ const page = () => {
                 </span>
                 <div className='font-bold'>
                   <span className='text-3xl'>
-                    30
+                    0
                   </span>
                   <span>
                     Articles
