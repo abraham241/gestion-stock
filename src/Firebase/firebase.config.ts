@@ -8,13 +8,13 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyApn_K9T0UyldjeQoiT9ZCpqULkz7pk0HM",
-  authDomain: "sandra-shop-bdd.firebaseapp.com",
-  projectId: "sandra-shop-bdd",
-  storageBucket: "sandra-shop-bdd.appspot.com",
-  messagingSenderId: "246018511545",
-  appId: "1:246018511545:web:cacb5f7f2cf9cfe22d8168"
-}
+  apiKey: "AIzaSyAq3x4_fBmTyQ5-2hVR00vwLeqPVIVW2Ng",
+  authDomain: "gestion-stock-97396.firebaseapp.com",
+  projectId: "gestion-stock-97396",
+  storageBucket: "gestion-stock-97396.appspot.com",
+  messagingSenderId: "251487422324",
+  appId: "1:251487422324:web:4c2267a5af6aa9ba494e21"
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
