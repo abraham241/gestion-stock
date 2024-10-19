@@ -6,7 +6,8 @@ import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration 
+// bdd cruz
 const firebaseConfig = {
   apiKey: "AIzaSyAq3x4_fBmTyQ5-2hVR00vwLeqPVIVW2Ng",
   authDomain: "gestion-stock-97396.firebaseapp.com",
